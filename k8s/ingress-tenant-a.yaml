@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tenant-a-ingress
+  namespace: tenant-a
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internal # Internal ALB (accessed via VPC Link)
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/group.name: jabari-ai-platform # Shares one ALB across namespaces
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /summarize
+            pathType: Prefix
+            backend:
+              service:
+                name: summarizer-service
+                port:
+                  number: 80
+          - path: /generate
+            pathType: Prefix
+            backend:
+              service:
+                name: generator-service
+                port:
+                  number: 80
+          - path: /embed
+            pathType: Prefix
+            backend:
+              service:
+                name: embedder-service
+                port:
+                  number: 80

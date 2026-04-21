@@ -1,5 +1,6 @@
 # Terraform
 .terraform/
+.terraform.tfstate.lock.info
 *.tfstate
 *.tfstate.*
 *.tfplan
@@ -15,9 +16,13 @@ terraform.rc
 # Variable files that often hold secrets (uncomment if you use them locally)
 # *.tfvars
 # *.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
 
 # OS
 .DS_Store
+Thumbs.db
+Desktop.ini
 
 # Editors
 .idea/
@@ -40,12 +45,23 @@ build/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.dmypy.json
 .coverage
 coverage.xml
 htmlcov/
 .hypothesis/
 
+# Kubernetes / local cluster auth (do not commit)
+kubeconfig
+kubeconfig.*
+*.kubeconfig
+
 # Environment and secrets
 .env
 .env.*
 !.env.example
+
+# General logs and temp files
+*.log
+tmp/
+temp/

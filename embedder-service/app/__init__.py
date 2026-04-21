@@ -1,0 +1,1 @@
+"""Embedder service application package."""

@@ -1,0 +1,1 @@
+"""Generator service application package."""
