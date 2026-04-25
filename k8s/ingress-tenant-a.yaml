@@ -13,6 +13,13 @@ spec:
   rules:
     - http:
         paths:
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: summarizer-service
+                port:
+                  number: 80
           - path: /summarize
             pathType: Prefix
             backend:

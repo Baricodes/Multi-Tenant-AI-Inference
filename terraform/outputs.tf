@@ -18,6 +18,31 @@ output "private_subnet_ids" {
   value       = aws_subnet.private[*].id
 }
 
+output "platform_nlb_arn" {
+  description = "ARN of the internal network load balancer (same subnets as the Ingress internal ALB)."
+  value       = aws_lb.platform_nlb.arn
+}
+
+output "platform_nlb_dns_name" {
+  description = "DNS name of the internal network load balancer."
+  value       = aws_lb.platform_nlb.dns_name
+}
+
+output "platform_nlb_target_group_arn" {
+  description = "ARN of the NLB TCP :80 target group (target type ALB → internal Ingress ALB)."
+  value       = aws_lb_target_group.platform_nlb_tcp.arn
+}
+
+output "platform_nlb_target_group_name" {
+  description = "Final name of the NLB target group in AWS (includes random suffix when using name_prefix)."
+  value       = aws_lb_target_group.platform_nlb_tcp.name
+}
+
+output "platform_ingress_alb_arn" {
+  description = "ARN of the internal ALB attached to the NLB target group; null if attach_platform_ingress_alb_to_nlb is false."
+  value       = local.platform_ingress_alb_arn
+}
+
 output "nat_gateway_ids" {
   description = "NAT gateway IDs (one per AZ)."
   value       = aws_nat_gateway.main[*].id
@@ -56,4 +81,34 @@ output "jabari_eks_node_role_arn" {
 output "jabari_bedrock_inference_role_arn" {
   description = "IAM role ARN for Bedrock inference workloads (jabari-bedrock-inference-role)."
   value       = aws_iam_role.jabari_bedrock_inference.arn
+}
+
+output "jabari_ai_platform_cluster_name" {
+  description = "EKS control plane name (jabari-ai-platform)."
+  value       = aws_eks_cluster.jabari_ai_platform.name
+}
+
+output "jabari_ai_platform_cluster_arn" {
+  description = "EKS cluster ARN."
+  value       = aws_eks_cluster.jabari_ai_platform.arn
+}
+
+output "jabari_ai_platform_cluster_endpoint" {
+  description = "Kubernetes API server endpoint for kubectl."
+  value       = aws_eks_cluster.jabari_ai_platform.endpoint
+}
+
+output "jabari_ai_platform_cluster_version" {
+  description = "Kubernetes server version running on the control plane."
+  value       = aws_eks_cluster.jabari_ai_platform.version
+}
+
+output "jabari_ai_platform_cluster_oidc_issuer_url" {
+  description = "OIDC issuer URL for IRSA (same as cluster identity)."
+  value       = aws_eks_cluster.jabari_ai_platform.identity[0].oidc[0].issuer
+}
+
+output "jabari_ai_platform_oidc_provider_arn" {
+  description = "IAM OIDC identity provider ARN for the cluster (IRSA)."
+  value       = aws_iam_openid_connect_provider.jabari_ai_platform.arn
 }

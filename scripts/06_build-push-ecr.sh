@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Run from the repository root.
-# Override account: AWS_ACCOUNT_ID=123456789012 ./scripts/build-push-ecr.sh
-# Override tag:       IMAGE_TAG=v1 ./scripts/build-push-ecr.sh
+# Override account: AWS_ACCOUNT_ID=123456789012 ./scripts/06_build-push-ecr.sh
+# Override tag:       IMAGE_TAG=v1 ./scripts/06_build-push-ecr.sh
 
 # Must match terraform/ecr.tf locals.ecr_repository_names (path after registry host).
 AWS_REGION="us-east-1"

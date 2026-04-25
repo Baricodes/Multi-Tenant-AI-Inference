@@ -13,9 +13,9 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Variable files that often hold secrets (uncomment if you use them locally)
-# *.tfvars
-# *.tfvars.json
+# Variable files that often hold secrets
+*.tfvars
+*.tfvars.json
 *.auto.tfvars
 *.auto.tfvars.json
 

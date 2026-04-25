@@ -14,5 +14,9 @@ kubectl get pods -n tenant-a
 kubectl get pods -n tenant-b
 
 echo ""
+echo "HPA (tenant-a):"
+kubectl get hpa -n tenant-a
+
+echo ""
 echo "Ingress (ALB DNS may take a few minutes):"
 kubectl get ingress -n tenant-a

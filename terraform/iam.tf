@@ -10,7 +10,10 @@ resource "aws_iam_role" "jabari_eks_cluster" {
         Principal = {
           Service = "eks.amazonaws.com"
         }
-        Action = "sts:AssumeRole"
+        Action = [
+          "sts:AssumeRole",
+          "sts:TagSession",
+        ]
       }
     ]
   })
@@ -19,6 +22,26 @@ resource "aws_iam_role" "jabari_eks_cluster" {
 resource "aws_iam_role_policy_attachment" "jabari_eks_cluster_amazon_eks_cluster" {
   role       = aws_iam_role.jabari_eks_cluster.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "jabari_eks_cluster_block_storage" {
+  role       = aws_iam_role.jabari_eks_cluster.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSBlockStoragePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "jabari_eks_cluster_compute" {
+  role       = aws_iam_role.jabari_eks_cluster.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSComputePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "jabari_eks_cluster_load_balancing" {
+  role       = aws_iam_role.jabari_eks_cluster.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "jabari_eks_cluster_networking" {
+  role       = aws_iam_role.jabari_eks_cluster.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy"
 }
 
 # EKS managed node group / worker role (trusted by EC2).
@@ -57,12 +80,18 @@ resource "aws_iam_role_policy_attachment" "jabari_eks_node_ecr_readonly" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  bedrock_inference_oidc_hostpath = replace(var.bedrock_inference_oidc_issuer_url, "https://", "")
+  bedrock_inference_oidc_issuer = coalesce(
+    var.bedrock_inference_oidc_issuer_url,
+    aws_eks_cluster.jabari_ai_platform.identity[0].oidc[0].issuer
+  )
+  bedrock_inference_oidc_hostpath = replace(local.bedrock_inference_oidc_issuer, "https://", "")
 }
 
 # Application / inference role (IRSA: EKS service accounts tenant-* / bedrock-sa).
 resource "aws_iam_role" "jabari_bedrock_inference" {
   name = "jabari-bedrock-inference-role"
+
+  depends_on = [aws_iam_openid_connect_provider.jabari_ai_platform]
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

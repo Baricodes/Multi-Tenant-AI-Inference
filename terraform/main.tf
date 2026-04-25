@@ -33,9 +33,9 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name                     = "${var.name_prefix}-public-${local.azs[count.index]}"
-    Tier                     = "public"
-    "kubernetes.io/role/elb" = "1"
+    Name                                       = "${var.name_prefix}-public-${local.azs[count.index]}"
+    Tier                                       = "public"
+    "kubernetes.io/cluster/jabari-ai-platform" = "owned"
   }
 }
 
@@ -47,10 +47,10 @@ resource "aws_subnet" "private" {
   availability_zone = local.azs[count.index]
 
   tags = {
-    Name                                         = "${var.name_prefix}-private-${local.azs[count.index]}"
-    Tier                                         = "private"
-    "kubernetes.io/role/internal-elb"            = "1"
-    "kubernetes.io/cluster/ai-inference-cluster" = "shared"
+    Name                                       = "${var.name_prefix}-private-${local.azs[count.index]}"
+    Tier                                       = "private"
+    "kubernetes.io/role/internal-elb"          = "1"
+    "kubernetes.io/cluster/jabari-ai-platform" = "owned"
   }
 }
 
