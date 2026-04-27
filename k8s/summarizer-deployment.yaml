@@ -17,7 +17,7 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
-      maxUnavailable: 0            # Zero-downtime rolling updates
+      maxUnavailable: 0
   template:
     metadata:
       labels:
@@ -37,7 +37,7 @@ spec:
               value: "tenant-a"
           resources:
             requests:
-              cpu: "250m"           # 0.25 vCPU — must be set for HPA
+              cpu: "250m"
               memory: "256Mi"
             limits:
               cpu: "500m"
@@ -65,6 +65,83 @@ kind: Service
 metadata:
   name: summarizer-service
   namespace: tenant-a
+  labels:
+    app: summarizer-service
+spec:
+  selector:
+    app: summarizer-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: summarizer-service
+  namespace: tenant-b
+  labels:
+    app: summarizer-service
+    tenant: tenant-b
+    model-type: summarization
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: summarizer-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: summarizer-service
+        tenant: tenant-b
+    spec:
+      serviceAccountName: bedrock-sa
+      containers:
+        - name: summarizer
+          image: jabari/summarizer-service:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DYNAMODB_TABLE
+              value: "ai-inference-logs"
+            - name: TENANT_ID
+              value: "tenant-b"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: summarizer-service
+  namespace: tenant-b
   labels:
     app: summarizer-service
 spec:

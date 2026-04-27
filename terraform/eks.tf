@@ -1,8 +1,11 @@
+# -----------------------------------------------------------------------------
+# EKS Control Plane
+# -----------------------------------------------------------------------------
+
 resource "aws_eks_cluster" "jabari_ai_platform" {
   name     = "jabari-ai-platform"
   role_arn = aws_iam_role.jabari_eks_cluster.arn
 
-  # Latest available Kubernetes version at creation time (AWS default when version is omitted).
   enabled_cluster_log_types = [
     "api",
     "audit",
@@ -30,7 +33,10 @@ resource "aws_eks_cluster" "jabari_ai_platform" {
   }
 }
 
-# Managed node group: private subnets only, on-demand t3.medium (console: jabari-ai-nodes).
+# -----------------------------------------------------------------------------
+# EKS Managed Node Group
+# -----------------------------------------------------------------------------
+
 resource "aws_eks_node_group" "jabari_ai_nodes" {
   cluster_name    = aws_eks_cluster.jabari_ai_platform.name
   node_group_name = "jabari-ai-nodes"
@@ -58,6 +64,10 @@ resource "aws_eks_node_group" "jabari_ai_nodes" {
     Name = "jabari-ai-nodes"
   }
 }
+
+# -----------------------------------------------------------------------------
+# Cluster OIDC Provider for IRSA
+# -----------------------------------------------------------------------------
 
 data "tls_certificate" "jabari_ai_platform_eks_oidc" {
   url = aws_eks_cluster.jabari_ai_platform.identity[0].oidc[0].issuer

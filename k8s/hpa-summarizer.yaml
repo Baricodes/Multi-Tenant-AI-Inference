@@ -16,7 +16,7 @@ spec:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 60 # Scale out when avg CPU > 60%
+          averageUtilization: 60
     - type: Resource
       resource:
         name: memory
@@ -25,14 +25,53 @@ spec:
           averageUtilization: 70
   behavior:
     scaleDown:
-      stabilizationWindowSeconds: 300 # Wait 5 min before scaling in
+      stabilizationWindowSeconds: 300
       policies:
         - type: Pods
           value: 1
-          periodSeconds: 60 # Remove at most 1 pod per minute
+          periodSeconds: 60
     scaleUp:
       stabilizationWindowSeconds: 30
       policies:
         - type: Pods
           value: 3
-          periodSeconds: 60 # Add up to 3 pods per minute
+          periodSeconds: 60
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: summarizer-hpa
+  namespace: tenant-b
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: summarizer-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Pods
+          value: 3
+          periodSeconds: 60

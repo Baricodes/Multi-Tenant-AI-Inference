@@ -1,0 +1,43 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tenant-b-ingress
+  namespace: tenant-b
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/group.name: jabari-ai-platform
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /tenant-b/health
+            pathType: Prefix
+            backend:
+              service:
+                name: summarizer-service
+                port:
+                  number: 80
+          - path: /tenant-b/summarize
+            pathType: Prefix
+            backend:
+              service:
+                name: summarizer-service
+                port:
+                  number: 80
+          - path: /tenant-b/generate
+            pathType: Prefix
+            backend:
+              service:
+                name: generator-service
+                port:
+                  number: 80
+          - path: /tenant-b/embed
+            pathType: Prefix
+            backend:
+              service:
+                name: embedder-service
+                port:
+                  number: 80

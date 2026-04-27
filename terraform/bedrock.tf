@@ -1,3 +1,7 @@
+# -----------------------------------------------------------------------------
+# Bedrock Runtime Endpoint Security Group
+# -----------------------------------------------------------------------------
+
 resource "aws_security_group" "bedrock_runtime_vpce" {
   name_prefix = "${var.name_prefix}-bedrock-rt-vpce-"
   description = "Allows HTTPS from the VPC to the Bedrock Runtime interface endpoint"
@@ -26,6 +30,10 @@ resource "aws_security_group" "bedrock_runtime_vpce" {
     create_before_destroy = true
   }
 }
+
+# -----------------------------------------------------------------------------
+# Bedrock Runtime Interface Endpoint
+# -----------------------------------------------------------------------------
 
 resource "aws_vpc_endpoint" "bedrock_runtime" {
   vpc_id              = aws_vpc.main.id

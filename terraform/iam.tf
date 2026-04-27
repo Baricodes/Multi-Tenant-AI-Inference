@@ -1,4 +1,7 @@
-# EKS cluster service role (console use case: EKS → EKS - Cluster).
+# -----------------------------------------------------------------------------
+# EKS Cluster Service Role
+# -----------------------------------------------------------------------------
+
 resource "aws_iam_role" "jabari_eks_cluster" {
   name = "jabari-eks-cluster-role"
 
@@ -18,6 +21,10 @@ resource "aws_iam_role" "jabari_eks_cluster" {
     ]
   })
 }
+
+# -----------------------------------------------------------------------------
+# EKS Cluster Policy Attachments
+# -----------------------------------------------------------------------------
 
 resource "aws_iam_role_policy_attachment" "jabari_eks_cluster_amazon_eks_cluster" {
   role       = aws_iam_role.jabari_eks_cluster.name
@@ -44,7 +51,10 @@ resource "aws_iam_role_policy_attachment" "jabari_eks_cluster_networking" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy"
 }
 
-# EKS managed node group / worker role (trusted by EC2).
+# -----------------------------------------------------------------------------
+# EKS Worker Node Role
+# -----------------------------------------------------------------------------
+
 resource "aws_iam_role" "jabari_eks_node" {
   name = "jabari-eks-node-role"
 
@@ -62,6 +72,10 @@ resource "aws_iam_role" "jabari_eks_node" {
   })
 }
 
+# -----------------------------------------------------------------------------
+# EKS Worker Node Policy Attachments
+# -----------------------------------------------------------------------------
+
 resource "aws_iam_role_policy_attachment" "jabari_eks_node_worker" {
   role       = aws_iam_role.jabari_eks_node.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
@@ -77,11 +91,14 @@ resource "aws_iam_role_policy_attachment" "jabari_eks_node_ecr_readonly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-# CloudWatch Container Insights (cwagent DaemonSet uses the node instance role).
 resource "aws_iam_role_policy_attachment" "jabari_eks_node_cloudwatch_agent" {
   role       = aws_iam_role.jabari_eks_node.name
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
+
+# -----------------------------------------------------------------------------
+# Account and OIDC Locals
+# -----------------------------------------------------------------------------
 
 data "aws_caller_identity" "current" {}
 
@@ -93,7 +110,10 @@ locals {
   bedrock_inference_oidc_hostpath = replace(local.bedrock_inference_oidc_issuer, "https://", "")
 }
 
-# Application / inference role (IRSA: EKS service accounts tenant-* / bedrock-sa).
+# -----------------------------------------------------------------------------
+# Bedrock Inference IRSA Role
+# -----------------------------------------------------------------------------
+
 resource "aws_iam_role" "jabari_bedrock_inference" {
   name = "jabari-bedrock-inference-role"
 
@@ -117,6 +137,10 @@ resource "aws_iam_role" "jabari_bedrock_inference" {
     ]
   })
 }
+
+# -----------------------------------------------------------------------------
+# Bedrock Inference Inline Policy
+# -----------------------------------------------------------------------------
 
 resource "aws_iam_role_policy" "jabari_bedrock_inference_inline" {
   name = "jabari-bedrock-inference-inline"

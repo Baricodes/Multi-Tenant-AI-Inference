@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Registry host uses __AWS_ACCOUNT_ID__; scripts/07_apply-k8s-manifests.sh substitutes it at apply time.
+# Registry host uses __AWS_ACCOUNT_ID__; scripts/06_apply-k8s-manifests.sh substitutes it at apply time.
 images:
   - name: jabari/summarizer-service
     newName: __AWS_ACCOUNT_ID__.dkr.ecr.us-east-1.amazonaws.com/jabari/summarizer-service
@@ -23,3 +23,4 @@ resources:
   - embedder-deployment.yaml
   - hpa-summarizer.yaml
   - ingress-tenant-a.yaml
+  - ingress-tenant-b.yaml

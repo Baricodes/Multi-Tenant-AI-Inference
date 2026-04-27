@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
+# Applies all Kubernetes manifests via Kustomize and then wires the LBC-managed internal ALB
+# to the NLB target group so API Gateway VPC Link traffic reaches the tenant services.
+# Run after scripts 01–05 (kubectl configured, LBC installed, images in ECR).
 set -euo pipefail
 
+# Resolve the repo root regardless of where the script is invoked from.
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text --region us-east-1)}"
 
+# Kustomize renders the manifest set and sed substitutes the account ID placeholder used
+# in ECR image URIs before piping the result directly to kubectl apply.
 kubectl kustomize "$ROOT/k8s" | sed "s/__AWS_ACCOUNT_ID__/${ACCOUNT_ID}/g" | kubectl apply -f -
 
 echo ""
@@ -29,8 +35,8 @@ kubectl get ingress -n tenant-a
 # Ingress is applied.  We poll until the Ingress reports a hostname, resolve
 # its ARN via the ELBv2 API, then let Terraform own the attachment so the
 # state stays consistent with the rest of the infrastructure.  By default this
-# script prints the Terraform command instead of applying it; set
-# APPLY_NLB_ATTACHMENT=true to run it from here.
+# script applies the Terraform attachment after the ALB is ready; set
+# APPLY_NLB_ATTACHMENT=false to print the command without applying it.
 # ---------------------------------------------------------------------------
 TERRAFORM_DIR="$ROOT/terraform"
 INGRESS_NAME="tenant-a-ingress"
@@ -38,7 +44,7 @@ INGRESS_NS="tenant-a"
 REGION="us-east-1"
 WAIT_ATTEMPTS=36   # 36 × 10 s = 6 minutes
 WAIT_INTERVAL=10
-APPLY_NLB_ATTACHMENT="${APPLY_NLB_ATTACHMENT:-false}"
+APPLY_NLB_ATTACHMENT="${APPLY_NLB_ATTACHMENT:-true}"
 
 echo ""
 echo "Waiting for Ingress ALB to be provisioned (up to ~6 minutes)..."

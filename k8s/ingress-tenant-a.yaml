@@ -20,7 +20,21 @@ spec:
                 name: summarizer-service
                 port:
                   number: 80
+          - path: /tenant-a/health
+            pathType: Prefix
+            backend:
+              service:
+                name: summarizer-service
+                port:
+                  number: 80
           - path: /summarize
+            pathType: Prefix
+            backend:
+              service:
+                name: summarizer-service
+                port:
+                  number: 80
+          - path: /tenant-a/summarize
             pathType: Prefix
             backend:
               service:
@@ -34,7 +48,21 @@ spec:
                 name: generator-service
                 port:
                   number: 80
+          - path: /tenant-a/generate
+            pathType: Prefix
+            backend:
+              service:
+                name: generator-service
+                port:
+                  number: 80
           - path: /embed
+            pathType: Prefix
+            backend:
+              service:
+                name: embedder-service
+                port:
+                  number: 80
+          - path: /tenant-a/embed
             pathType: Prefix
             backend:
               service:

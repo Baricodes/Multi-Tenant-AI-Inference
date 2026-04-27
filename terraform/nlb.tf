@@ -1,9 +1,6 @@
-# Internal NLB in the same subnets as the EKS-managed internal ALB (private subnets
-# tagged kubernetes.io/role/internal-elb). See k8s/ingress-tenant-a.yaml
-# (alb.ingress.kubernetes.io/scheme: internal).
-#
-# Target group uses target_type = alb: the NLB forwards TCP/80 to the shared
-# internal ALB (Ingress group), which routes by path to tenant services.
+# -----------------------------------------------------------------------------
+# Ingress ALB Discovery
+# -----------------------------------------------------------------------------
 
 data "aws_lb" "platform_ingress_by_arn" {
   count = var.attach_platform_ingress_alb_to_nlb && var.platform_ingress_alb_arn != null ? 1 : 0
@@ -13,27 +10,22 @@ data "aws_lb" "platform_ingress_by_arn" {
 data "aws_lb" "platform_ingress_by_tag" {
   count = var.attach_platform_ingress_alb_to_nlb && var.platform_ingress_alb_arn == null ? 1 : 0
 
-  # The AWS Load Balancer Controller stamps every ALB it manages with these
-  # two tags.  `ingress.k8s.aws/stack` equals the Ingress group.name annotation.
   tags = {
     "elbv2.k8s.aws/cluster" = aws_eks_cluster.jabari_ai_platform.name
     "ingress.k8s.aws/stack" = var.ingress_group_stack_id
   }
 
-  # The LBC creates this ALB only after the Ingress manifest is applied.
-  # If this data source returns no results, it means script 07 has not run yet
-  # (or attach_platform_ingress_alb_to_nlb was set true before the Ingress was
-  # applied).  Prefer passing platform_ingress_alb_arn explicitly (the script
-  # does this automatically) so Terraform never relies on the tag lookup.
   depends_on = [
     aws_eks_cluster.jabari_ai_platform,
     aws_eks_node_group.jabari_ai_nodes,
   ]
 }
 
+# -----------------------------------------------------------------------------
+# NLB Target Group Locals
+# -----------------------------------------------------------------------------
+
 locals {
-  # `name_prefix` is limited to 6 characters; AWS appends a unique suffix. Using `name_prefix` (not a
-  # fixed `name`) allows `create_before_destroy` so the listener is repointed before the old TG is removed.
   platform_nlb_target_group_name_prefix = substr("${var.name_prefix}-nlb", 0, 6)
 
   platform_ingress_alb_arn = (
@@ -42,6 +34,10 @@ locals {
     data.aws_lb.platform_ingress_by_tag[0].arn
   )
 }
+
+# -----------------------------------------------------------------------------
+# NLB Target Group
+# -----------------------------------------------------------------------------
 
 resource "aws_lb_target_group" "platform_nlb_tcp" {
   name_prefix = local.platform_nlb_target_group_name_prefix
@@ -70,11 +66,19 @@ resource "aws_lb_target_group" "platform_nlb_tcp" {
   }
 }
 
+# -----------------------------------------------------------------------------
+# NLB to ALB Target Attachment
+# -----------------------------------------------------------------------------
+
 resource "aws_lb_target_group_attachment" "platform_nlb_to_ingress_alb" {
   count            = var.attach_platform_ingress_alb_to_nlb ? 1 : 0
   target_group_arn = aws_lb_target_group.platform_nlb_tcp.arn
   target_id        = local.platform_ingress_alb_arn
 }
+
+# -----------------------------------------------------------------------------
+# Internal Network Load Balancer
+# -----------------------------------------------------------------------------
 
 resource "aws_lb" "platform_nlb" {
   name               = "${var.name_prefix}-nlb"
@@ -86,6 +90,10 @@ resource "aws_lb" "platform_nlb" {
     Name = "${var.name_prefix}-nlb"
   }
 }
+
+# -----------------------------------------------------------------------------
+# NLB TCP Listener
+# -----------------------------------------------------------------------------
 
 resource "aws_lb_listener" "platform_nlb_tcp" {
   load_balancer_arn = aws_lb.platform_nlb.arn

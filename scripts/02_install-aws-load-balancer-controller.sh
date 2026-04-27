@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Installs the AWS Load Balancer Controller into kube-system via Helm.
+# The controller watches Ingress objects and provisions ALBs / TargetGroups automatically.
+# Prerequisites: kubectl configured for jabari-ai-platform, Helm 3+, and OIDC enabled on the cluster.
 set -euo pipefail
 
 if ! command -v helm &>/dev/null; then
@@ -9,6 +12,8 @@ fi
 
 REGION="us-east-1"
 CLUSTER_NAME="jabari-ai-platform"
+# All generated files (IAM policy JSON, trust policy, ServiceAccount YAML) go into a
+# temporary directory that is cleaned up automatically when the script exits.
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -42,6 +47,7 @@ if [[ -z "$OIDC_ISSUER" || "$OIDC_ISSUER" == "None" ]]; then
   exit 1
 fi
 
+# Strip the https:// scheme to get the bare host path used in IAM OIDC provider ARNs and trust conditions.
 OIDC_HOSTPATH="${OIDC_ISSUER#https://}"
 OIDC_ARN="arn:aws:iam::${ACCOUNT_ID}:oidc-provider/${OIDC_HOSTPATH}"
 ROLE_NAME="AmazonEKSLoadBalancerControllerRole"
@@ -81,6 +87,7 @@ else
     --policy-document "file://${TRUST_FILE}"
 fi
 
+# attach-role-policy is idempotent: running it again on an already-attached policy is a no-op.
 aws iam attach-role-policy --role-name "$ROLE_NAME" --policy-arn "$POLICY_ARN"
 
 SA_FILE="${TMP}/aws-lbc-sa.yaml"

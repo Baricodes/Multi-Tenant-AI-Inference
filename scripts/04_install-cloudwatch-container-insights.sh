@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Deploys the AWS Container Insights stack (CloudWatch Agent + Fluent Bit) so that
+# pod CPU/memory metrics and container logs are shipped to CloudWatch for dashboards
+# and alarms defined in terraform/cloudwatch.tf.
 set -euo pipefail
 
 # Applies the AWS Container Insights quickstart (CloudWatch agent + Fluent Bit DaemonSet).

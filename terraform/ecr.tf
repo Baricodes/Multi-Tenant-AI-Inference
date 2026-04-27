@@ -1,3 +1,7 @@
+# -----------------------------------------------------------------------------
+# Repository Name Set
+# -----------------------------------------------------------------------------
+
 locals {
   ecr_repository_names = toset([
     "jabari/summarizer-service",
@@ -5,6 +9,10 @@ locals {
     "jabari/embedder-service",
   ])
 }
+
+# -----------------------------------------------------------------------------
+# Service Image Repositories
+# -----------------------------------------------------------------------------
 
 resource "aws_ecr_repository" "service" {
   for_each = local.ecr_repository_names
@@ -16,6 +24,10 @@ resource "aws_ecr_repository" "service" {
     scan_on_push = true
   }
 }
+
+# -----------------------------------------------------------------------------
+# Image Cleanup Policies
+# -----------------------------------------------------------------------------
 
 resource "aws_ecr_lifecycle_policy" "service" {
   for_each = local.ecr_repository_names

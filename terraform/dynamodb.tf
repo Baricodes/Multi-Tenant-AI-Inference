@@ -1,6 +1,6 @@
-# Application logging table used by summarizer, generator, and embedder service containers.
-# PK/SK and GSI keys must match the Python `put_item` / query patterns.
-# TTL: set `ttl` to int(time.time()) + 7776000 (90 days) for 90-day retention; DynamoDB deletes items after that epoch.
+# -----------------------------------------------------------------------------
+# Inference Request Log Table
+# -----------------------------------------------------------------------------
 
 resource "aws_dynamodb_table" "ai_inference_logs" {
   name         = "ai-inference-logs"

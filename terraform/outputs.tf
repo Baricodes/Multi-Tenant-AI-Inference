@@ -1,3 +1,7 @@
+# -----------------------------------------------------------------------------
+# VPC / Networking
+# -----------------------------------------------------------------------------
+
 output "vpc_id" {
   description = "ID of the VPC."
   value       = aws_vpc.main.id
@@ -18,6 +22,20 @@ output "private_subnet_ids" {
   value       = aws_subnet.private[*].id
 }
 
+output "nat_gateway_ids" {
+  description = "NAT gateway IDs (one per AZ)."
+  value       = aws_nat_gateway.main[*].id
+}
+
+output "availability_zones" {
+  description = "AZs used for subnets."
+  value       = local.azs
+}
+
+# -----------------------------------------------------------------------------
+# NLB / ALB
+# -----------------------------------------------------------------------------
+
 output "platform_nlb_arn" {
   description = "ARN of the internal network load balancer (same subnets as the Ingress internal ALB)."
   value       = aws_lb.platform_nlb.arn
@@ -29,7 +47,7 @@ output "platform_nlb_dns_name" {
 }
 
 output "platform_nlb_target_group_arn" {
-  description = "ARN of the NLB TCP :80 target group (target type ALB → internal Ingress ALB)."
+  description = "ARN of the NLB TCP :80 target group (target type ALB -> internal Ingress ALB)."
   value       = aws_lb_target_group.platform_nlb_tcp.arn
 }
 
@@ -43,20 +61,58 @@ output "platform_ingress_alb_arn" {
   value       = local.platform_ingress_alb_arn
 }
 
-output "nat_gateway_ids" {
-  description = "NAT gateway IDs (one per AZ)."
-  value       = aws_nat_gateway.main[*].id
+# -----------------------------------------------------------------------------
+# API Gateway
+# -----------------------------------------------------------------------------
+
+output "api_gateway_rest_api_id" {
+  description = "ID of the API Gateway REST API."
+  value       = aws_api_gateway_rest_api.inference.id
 }
 
-output "availability_zones" {
-  description = "AZs used for subnets."
-  value       = local.azs
+output "api_gateway_stage_invoke_url" {
+  description = "Invoke URL for the API Gateway REST API stage."
+  value       = aws_api_gateway_stage.prod.invoke_url
 }
+
+output "tenant_a_api_key_value" {
+  description = "Generated API key value for tenant-a. Use as the x-api-key header."
+  value       = aws_api_gateway_api_key.tenant_a.value
+  sensitive   = true
+}
+
+output "tenant_b_api_key_value" {
+  description = "Generated API key value for tenant-b. Use as the x-api-key header."
+  value       = aws_api_gateway_api_key.tenant_b.value
+  sensitive   = true
+}
+
+# -----------------------------------------------------------------------------
+# CloudWatch
+# -----------------------------------------------------------------------------
+
+output "cloudwatch_dashboard_name" {
+  description = "Name of the CloudWatch dashboard for platform monitoring."
+  value       = aws_cloudwatch_dashboard.platform.dashboard_name
+}
+
+output "cloudwatch_alarm_topic_arn" {
+  description = "SNS topic ARN used by CloudWatch alarms."
+  value       = aws_sns_topic.cloudwatch_alerts.arn
+}
+
+# -----------------------------------------------------------------------------
+# Bedrock
+# -----------------------------------------------------------------------------
 
 output "bedrock_runtime_vpc_endpoint_id" {
   description = "Interface VPC endpoint ID for Bedrock Runtime (private DNS enabled)."
   value       = aws_vpc_endpoint.bedrock_runtime.id
 }
+
+# -----------------------------------------------------------------------------
+# ECR
+# -----------------------------------------------------------------------------
 
 output "ecr_repository_urls" {
   description = "ECR repository URLs for tenant service images (keys match repository name)."
@@ -67,6 +123,10 @@ output "ecr_repository_arns" {
   description = "ECR repository ARNs for IAM policies and references."
   value       = { for k, r in aws_ecr_repository.service : k => r.arn }
 }
+
+# -----------------------------------------------------------------------------
+# EKS / IAM
+# -----------------------------------------------------------------------------
 
 output "jabari_eks_cluster_role_arn" {
   description = "IAM role ARN for the EKS cluster service role (jabari-eks-cluster-role)."
@@ -102,6 +162,10 @@ output "jabari_ai_platform_cluster_version" {
   description = "Kubernetes server version running on the control plane."
   value       = aws_eks_cluster.jabari_ai_platform.version
 }
+
+# -----------------------------------------------------------------------------
+# IRSA
+# -----------------------------------------------------------------------------
 
 output "jabari_ai_platform_cluster_oidc_issuer_url" {
   description = "OIDC issuer URL for IRSA (same as cluster identity)."

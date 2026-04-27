@@ -1,3 +1,7 @@
+# -----------------------------------------------------------------------------
+# Availability Zone Selection
+# -----------------------------------------------------------------------------
+
 data "aws_availability_zones" "available" {
   state = "available"
 }
@@ -5,6 +9,10 @@ data "aws_availability_zones" "available" {
 locals {
   azs = slice(data.aws_availability_zones.available.names, 0, 2)
 }
+
+# -----------------------------------------------------------------------------
+# VPC
+# -----------------------------------------------------------------------------
 
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
@@ -16,6 +24,10 @@ resource "aws_vpc" "main" {
   }
 }
 
+# -----------------------------------------------------------------------------
+# Internet Gateway
+# -----------------------------------------------------------------------------
+
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -23,6 +35,10 @@ resource "aws_internet_gateway" "main" {
     Name = "${var.name_prefix}-igw"
   }
 }
+
+# -----------------------------------------------------------------------------
+# Public Subnets
+# -----------------------------------------------------------------------------
 
 resource "aws_subnet" "public" {
   count = 2
@@ -39,6 +55,10 @@ resource "aws_subnet" "public" {
   }
 }
 
+# -----------------------------------------------------------------------------
+# Private Subnets
+# -----------------------------------------------------------------------------
+
 resource "aws_subnet" "private" {
   count = 2
 
@@ -53,6 +73,10 @@ resource "aws_subnet" "private" {
     "kubernetes.io/cluster/jabari-ai-platform" = "owned"
   }
 }
+
+# -----------------------------------------------------------------------------
+# NAT Gateway Egress
+# -----------------------------------------------------------------------------
 
 resource "aws_eip" "nat" {
   count = 2
@@ -79,6 +103,10 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
+# -----------------------------------------------------------------------------
+# Public Routing
+# -----------------------------------------------------------------------------
+
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -98,6 +126,10 @@ resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
+
+# -----------------------------------------------------------------------------
+# Private Routing
+# -----------------------------------------------------------------------------
 
 resource "aws_route_table" "private" {
   count = 2
