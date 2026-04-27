@@ -203,11 +203,12 @@ The smoke test calls summarize, generate, and embed endpoints, queries DynamoDB 
 
 ## Screenshots
 
-### Architecture Overview
+### Live Terminal Demo
 
-The high-level system design shows the public API entry point, private load balancer chain, EKS tenant namespaces, Bedrock model calls, and observability layer.
+This GIF shows the platform being exercised from the command line, including inference endpoint calls and validation output.
 
-![Architecture overview](images/multi_tenant_ai_platform.png)
+![Live terminal demo](images/demo-terminal.gif)
+
 
 ### API Gateway to ALB Flow
 
