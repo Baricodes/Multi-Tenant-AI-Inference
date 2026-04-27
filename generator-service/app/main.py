@@ -4,10 +4,10 @@ import uuid
 import boto3
 from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
-from app.bedrock_client import invoke_claude_sonnet
+from app.bedrock_client import invoke_claude_sonnet_4_6
 
 app = FastAPI(title="Generator Service")
-dynamodb = boto3.resource("dynamodb", region_name=os.getenv("AWS_REGION", "us-east-1"))
+dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 table = dynamodb.Table(os.getenv("DYNAMODB_TABLE", "ai-inference-logs"))
 
 class GenerateRequest(BaseModel):
@@ -34,7 +34,7 @@ async def generate(
     prompt = f"Respond to the following in {request.max_length} words or fewer:\n\n{request.text}"
 
     try:
-        result = invoke_claude_sonnet(prompt)
+        result = invoke_claude_sonnet_4_6(prompt)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Bedrock error: {str(e)}")
 
@@ -44,7 +44,7 @@ async def generate(
         "request_id": request_id,
         "tenant_id": x_tenant_id,
         "service": "generator",
-        "model": "claude-3-sonnet",
+        "model": "us.claude-sonnet-4-6",
         "latency_ms": int(latency_ms),
         "input_tokens": result["input_tokens"],
         "output_tokens": result["output_tokens"],

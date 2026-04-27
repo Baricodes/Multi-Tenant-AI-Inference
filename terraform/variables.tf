@@ -37,10 +37,18 @@ variable "ingress_group_stack_id" {
 
 variable "attach_platform_ingress_alb_to_nlb" {
   description = <<-EOT
-    When true, discovers the LBC internal ALB (by ARN or tags) and registers it with the NLB target group.
-    Default false so terraform apply can succeed before the LBC has created the ALB (data.aws_lb would otherwise return 0 results).
-    After the shared Ingress is applied and the ALB exists, set this to true, or set platform_ingress_alb_arn, and re-apply.
-    When the target group is replaced (name_prefix change), set true in the same apply so the new group receives the ALB attachment; otherwise re-register the ALB target manually.
+    When true, discovers the LBC-managed internal ALB (by platform_ingress_alb_arn or by tags)
+    and registers it with the NLB target group so API Gateway VPC Link traffic is forwarded to
+    the tenant services.
+
+    Leave false for the initial `terraform apply` (the ALB does not exist yet; data.aws_lb would
+    fail).  Script 07_apply-k8s-manifests.sh sets this to true automatically after the Ingress
+    is applied and the ALB is provisioned, supplying platform_ingress_alb_arn so Terraform skips
+    the tag-based lookup.
+
+    To make the wiring permanent across future runs, add to terraform.tfvars:
+      attach_platform_ingress_alb_to_nlb = true
+      platform_ingress_alb_arn           = "<arn printed by script 07>"
   EOT
   type        = bool
   default     = false

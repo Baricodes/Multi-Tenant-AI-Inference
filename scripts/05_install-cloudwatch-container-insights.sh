@@ -22,3 +22,26 @@ curl -fsSL https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-conta
     -e 's/{{read_from_head}}/"'"${FluentBitReadFromHead}"'"/g' \
     -e 's/{{read_from_tail}}/"On"/g' \
   | kubectl apply -f -
+
+# Container Insights still reads EC2 metadata for node identity. With the usual IMDSv2
+# hop limit, pods cannot reach IMDS unless the agent uses the host network namespace.
+kubectl patch daemonset/cloudwatch-agent \
+  -n amazon-cloudwatch \
+  --type='strategic' \
+  -p '{"spec":{"template":{"spec":{"hostNetwork":true,"dnsPolicy":"ClusterFirstWithHostNet"}}}}'
+
+# The quickstart ClusterRole omits a few resources that the current agent attempts to
+# list. Reconcile only the missing permissions so upstream quickstart rules remain intact.
+kubectl auth reconcile -f - <<'EOF'
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudwatch-agent-role
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes", "persistentvolumeclaims"]
+    verbs: ["list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+EOF

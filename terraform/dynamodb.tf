@@ -32,7 +32,7 @@ resource "aws_dynamodb_table" "ai_inference_logs" {
 
   ttl {
     attribute_name = "ttl"
-    enabled          = true
+    enabled        = true
   }
 
   tags = {

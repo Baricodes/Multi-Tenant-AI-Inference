@@ -7,11 +7,11 @@ set -euo pipefail
 # does this; only run this if you are not using that resource.
 
 CLUSTER_NAME="jabari-ai-platform"
-AWS_REGION="us-east-1"
+REGION="us-east-1"
 
 OIDC_ISSUER=$(aws eks describe-cluster \
   --name "${CLUSTER_NAME}" \
-  --region "${AWS_REGION}" \
+  --region "${REGION}" \
   --query "cluster.identity.oidc.issuer" \
   --output text)
 
@@ -49,7 +49,7 @@ if [[ ${RC} -eq 0 ]]; then
   echo "Created IAM OIDC identity provider for ${OIDC_ISSUER}"
   exit 0
 fi
-if echo "${ERR}" | grep -q 'EntityAlreadyExists'; then
+if [[ "${ERR}" == *"EntityAlreadyExists"* ]]; then
   echo "IAM OIDC provider for this URL already exists (nothing to do)."
   exit 0
 fi

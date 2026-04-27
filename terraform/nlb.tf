@@ -13,11 +13,18 @@ data "aws_lb" "platform_ingress_by_arn" {
 data "aws_lb" "platform_ingress_by_tag" {
   count = var.attach_platform_ingress_alb_to_nlb && var.platform_ingress_alb_arn == null ? 1 : 0
 
+  # The AWS Load Balancer Controller stamps every ALB it manages with these
+  # two tags.  `ingress.k8s.aws/stack` equals the Ingress group.name annotation.
   tags = {
     "elbv2.k8s.aws/cluster" = aws_eks_cluster.jabari_ai_platform.name
     "ingress.k8s.aws/stack" = var.ingress_group_stack_id
   }
 
+  # The LBC creates this ALB only after the Ingress manifest is applied.
+  # If this data source returns no results, it means script 07 has not run yet
+  # (or attach_platform_ingress_alb_to_nlb was set true before the Ingress was
+  # applied).  Prefer passing platform_ingress_alb_arn explicitly (the script
+  # does this automatically) so Terraform never relies on the tag lookup.
   depends_on = [
     aws_eks_cluster.jabari_ai_platform,
     aws_eks_node_group.jabari_ai_nodes,

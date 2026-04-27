@@ -31,8 +31,6 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            - name: AWS_REGION
-              value: "us-east-1"
             - name: DYNAMODB_TABLE
               value: "ai-inference-logs"
             - name: TENANT_ID
@@ -110,8 +108,6 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            - name: AWS_REGION
-              value: "us-east-1"
             - name: DYNAMODB_TABLE
               value: "ai-inference-logs"
             - name: TENANT_ID

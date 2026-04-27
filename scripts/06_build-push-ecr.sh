@@ -6,19 +6,19 @@ set -euo pipefail
 # Override tag:       IMAGE_TAG=v1 ./scripts/06_build-push-ecr.sh
 
 # Must match terraform/ecr.tf locals.ecr_repository_names (path after registry host).
-AWS_REGION="us-east-1"
+REGION="us-east-1"
 ECR_REPOSITORY_PREFIX="jabari"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
-ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text --region "${AWS_REGION}")}"
-REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text --region "${REGION}")}"
+REGISTRY="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
 
 # Order matches terraform/ecr.tf: jabari/<slug>-service
 SERVICES=(summarizer generator embedder)
 SERVICE_CONTEXTS=(summarizer-service generator-service embedder-service)
 
 # Authenticate Docker to ECR
-aws ecr get-login-password --region "${AWS_REGION}" | \
+aws ecr get-login-password --region "${REGION}" | \
   docker login --username AWS \
   --password-stdin "${REGISTRY}"
 

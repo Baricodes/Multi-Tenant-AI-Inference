@@ -1,8 +1,7 @@
 import boto3
 import json
-import os
 
-bedrock = boto3.client("bedrock-runtime", region_name=os.getenv("AWS_REGION", "us-east-1"))
+bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
 
 
 def invoke_titan_embed_v2(text: str) -> dict:

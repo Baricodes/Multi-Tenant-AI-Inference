@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.bedrock_client import invoke_claude_haiku
 
 app = FastAPI(title="Summarizer Service")
-dynamodb = boto3.resource("dynamodb", region_name=os.getenv("AWS_REGION", "us-east-1"))
+dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 table = dynamodb.Table(os.getenv("DYNAMODB_TABLE", "ai-inference-logs"))
 
 class SummarizeRequest(BaseModel):

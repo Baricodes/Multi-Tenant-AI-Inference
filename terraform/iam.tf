@@ -77,6 +77,12 @@ resource "aws_iam_role_policy_attachment" "jabari_eks_node_ecr_readonly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+# CloudWatch Container Insights (cwagent DaemonSet uses the node instance role).
+resource "aws_iam_role_policy_attachment" "jabari_eks_node_cloudwatch_agent" {
+  role       = aws_iam_role.jabari_eks_node.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
 data "aws_caller_identity" "current" {}
 
 locals {
@@ -120,7 +126,7 @@ resource "aws_iam_role_policy" "jabari_bedrock_inference_inline" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "BedrockInference"
+        Sid    = "BedrockDirectInference"
         Effect = "Allow"
         Action = [
           "bedrock:InvokeModel",
@@ -128,9 +134,35 @@ resource "aws_iam_role_policy" "jabari_bedrock_inference_inline" {
         ]
         Resource = [
           "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
-          "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0",
           "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0"
         ]
+      },
+      {
+        Sid    = "BedrockClaudeSonnetInferenceProfile"
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ]
+        Resource = "arn:aws:bedrock:us-east-1:${data.aws_caller_identity.current.account_id}:inference-profile/us.anthropic.claude-sonnet-4-6"
+      },
+      {
+        Sid    = "BedrockClaudeSonnetFoundationModels"
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ]
+        Resource = [
+          "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-sonnet-4-6",
+          "arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-sonnet-4-6",
+          "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-sonnet-4-6"
+        ]
+        Condition = {
+          StringLike = {
+            "bedrock:InferenceProfileArn" = "arn:aws:bedrock:us-east-1:${data.aws_caller_identity.current.account_id}:inference-profile/us.anthropic.claude-sonnet-4-6"
+          }
+        }
       },
       {
         Sid    = "DynamoDBLogging"
