@@ -33,10 +33,9 @@ kubectl get ingress -n tenant-a
 #
 # The AWS Load Balancer Controller creates the ALB asynchronously after the
 # Ingress is applied.  We poll until the Ingress reports a hostname, resolve
-# its ARN via the ELBv2 API, then let Terraform own the attachment so the
-# state stays consistent with the rest of the infrastructure.  By default this
-# script applies the Terraform attachment after the ALB is ready; set
-# APPLY_NLB_ATTACHMENT=false to print the command without applying it.
+# its ARN via the ELBv2 API, then register that ALB with the Terraform-created
+# NLB target group. The ALB ARN is discovered at runtime so demo deployments do
+# not need hardcoded or committed environment-specific values.
 # ---------------------------------------------------------------------------
 TERRAFORM_DIR="$ROOT/terraform"
 INGRESS_NAME="tenant-a-ingress"
@@ -44,7 +43,7 @@ INGRESS_NS="tenant-a"
 REGION="us-east-1"
 WAIT_ATTEMPTS=36   # 36 × 10 s = 6 minutes
 WAIT_INTERVAL=10
-APPLY_NLB_ATTACHMENT="${APPLY_NLB_ATTACHMENT:-true}"
+REGISTER_NLB_TARGET="${REGISTER_NLB_TARGET:-${APPLY_NLB_ATTACHMENT:-true}}"
 
 echo ""
 echo "Waiting for Ingress ALB to be provisioned (up to ~6 minutes)..."
@@ -71,9 +70,10 @@ if [[ -z "$ALB_HOSTNAME" || "$ALB_HOSTNAME" == "None" ]]; then
   echo "    ALB_ARN=\$(aws elbv2 describe-load-balancers \\" >&2
   echo "      --query \"LoadBalancers[?DNSName=='\$(kubectl get ingress $INGRESS_NAME -n $INGRESS_NS -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')'].LoadBalancerArn | [0]\" \\" >&2
   echo "      --output text --region $REGION)" >&2
-  echo "    terraform -chdir=$TERRAFORM_DIR apply \\" >&2
-  echo "      -var=\"attach_platform_ingress_alb_to_nlb=true\" \\" >&2
-  echo "      -var=\"platform_ingress_alb_arn=\$ALB_ARN\"" >&2
+  echo "    TG_ARN=\$(terraform -chdir=$TERRAFORM_DIR output -raw platform_nlb_target_group_arn)" >&2
+  echo "    aws elbv2 register-targets --region $REGION \\" >&2
+  echo "      --target-group-arn \"\$TG_ARN\" \\" >&2
+  echo "      --targets Id=\"\$ALB_ARN\",Port=80" >&2
   echo ""
   exit 0
 fi
@@ -98,30 +98,53 @@ fi
 
 echo "Internal ALB ARN: $ALB_ARN"
 echo ""
-if [[ "$APPLY_NLB_ATTACHMENT" == "true" ]]; then
-  echo "Attaching internal ALB to NLB target group via Terraform..."
-  terraform -chdir="$TERRAFORM_DIR" apply \
-    -var="attach_platform_ingress_alb_to_nlb=true" \
-    -var="platform_ingress_alb_arn=${ALB_ARN}"
+TG_ARN="$(terraform -chdir="$TERRAFORM_DIR" output -raw platform_nlb_target_group_arn)"
+echo "NLB target group ARN: $TG_ARN"
+echo ""
+if [[ "$REGISTER_NLB_TARGET" == "true" ]]; then
+  echo "Registering internal ALB with NLB target group..."
+  aws elbv2 register-targets \
+    --region "$REGION" \
+    --target-group-arn "$TG_ARN" \
+    --targets "Id=${ALB_ARN},Port=80"
+
+  echo "Waiting for NLB target health to become healthy (up to ~3 minutes)..."
+  TARGET_HEALTH=""
+  for i in $(seq 1 18); do
+    TARGET_HEALTH=$(
+      aws elbv2 describe-target-health \
+        --region "$REGION" \
+        --target-group-arn "$TG_ARN" \
+        --targets "Id=${ALB_ARN},Port=80" \
+        --query "TargetHealthDescriptions[0].TargetHealth.State" \
+        --output text 2>/dev/null || true
+    )
+    if [[ "$TARGET_HEALTH" == "healthy" ]]; then
+      echo "NLB target health: healthy"
+      break
+    fi
+    echo "  ($i/18) target health is '${TARGET_HEALTH:-unknown}' – retrying in 10s..."
+    sleep 10
+  done
+
+  if [[ "$TARGET_HEALTH" != "healthy" ]]; then
+    echo "WARNING: NLB target did not become healthy within the wait window." >&2
+    echo "  Current target health: ${TARGET_HEALTH:-unknown}" >&2
+    echo "  Check target health in EC2 or rerun this script after the ALB is ready." >&2
+  fi
 else
-  echo "Terraform attachment not applied automatically."
-  echo "Review and run this command when you are ready to attach the ALB to the NLB target group:"
+  echo "NLB target registration not applied automatically."
+  echo "Review and run this command when you are ready to register the ALB with the NLB target group:"
   echo ""
-  echo "  terraform -chdir=$TERRAFORM_DIR apply \\"
-  echo "    -var=\"attach_platform_ingress_alb_to_nlb=true\" \\"
-  echo "    -var=\"platform_ingress_alb_arn=${ALB_ARN}\""
+  echo "  aws elbv2 register-targets --region $REGION \\"
+  echo "    --target-group-arn \"$TG_ARN\" \\"
+  echo "    --targets Id=\"${ALB_ARN}\",Port=80"
 fi
 
 echo ""
-if [[ "$APPLY_NLB_ATTACHMENT" == "true" ]]; then
+if [[ "$REGISTER_NLB_TARGET" == "true" ]]; then
   echo "NLB target group is now wired to the internal ALB."
   echo "API Gateway VPC Link → NLB → ALB → tenant services."
 else
-  echo "API Gateway VPC Link traffic will reach tenant services after the Terraform attachment is applied."
+  echo "API Gateway VPC Link traffic will reach tenant services after the NLB target is registered."
 fi
-echo ""
-echo "To make the attachment permanent across future 'terraform apply' runs, add"
-echo "the following to terraform/terraform.tfvars (create the file if it does not exist):"
-echo ""
-echo "  attach_platform_ingress_alb_to_nlb = true"
-echo "  platform_ingress_alb_arn           = \"${ALB_ARN}\""

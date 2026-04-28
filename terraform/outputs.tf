@@ -56,11 +56,6 @@ output "platform_nlb_target_group_name" {
   value       = aws_lb_target_group.platform_nlb_tcp.name
 }
 
-output "platform_ingress_alb_arn" {
-  description = "ARN of the internal ALB attached to the NLB target group; null if attach_platform_ingress_alb_to_nlb is false."
-  value       = local.platform_ingress_alb_arn
-}
-
 # -----------------------------------------------------------------------------
 # API Gateway
 # -----------------------------------------------------------------------------

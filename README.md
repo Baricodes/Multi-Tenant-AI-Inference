@@ -175,7 +175,7 @@ The image build script uses Docker `--provenance=false`, which is required for A
 ./scripts/06_apply-k8s-manifests.sh
 ```
 
-This applies namespaces, RBAC, deployments, services, HPAs, and Ingress objects. It then waits for the internal ALB, resolves its ARN, and runs Terraform again to attach the ALB to the NLB target group.
+This applies namespaces, RBAC, deployments, services, HPAs, and Ingress objects. It then waits for the internal ALB, resolves its ARN, registers it with the NLB target group, and waits for target health.
 
 ### 8. Run the End-to-End Smoke Test
 
@@ -191,8 +191,6 @@ The smoke test calls summarize, generate, and embed endpoints, queries DynamoDB 
 
 - `aws_region` - AWS region for Terraform resources. Default: `us-east-1`.
 - `name_prefix` - prefix for resource names and tags. Default: `mtai`.
-- `attach_platform_ingress_alb_to_nlb` - enables NLB target attachment after the ALB exists. Default: `false`.
-- `platform_ingress_alb_arn` - optional explicit ARN for the internal ALB created by Kubernetes Ingress.
 - `api_gateway_stage_name` - API Gateway stage name. Default and required value: `prod`.
 - `tenant_a_throttle_rate_limit` / `tenant_b_throttle_rate_limit` - steady request rate per tenant. Default: `100`.
 - `tenant_a_throttle_burst_limit` / `tenant_b_throttle_burst_limit` - burst request limit per tenant. Default: `200`.
@@ -252,7 +250,7 @@ The dashboard tracks API Gateway health and EKS workload metrics.
 ./scripts/06_apply-k8s-manifests.sh
 ```
 
-If the script cannot resolve the ALB in time, rerun it after the Ingress hostname appears or run the Terraform attachment command printed by the script.
+If the script cannot resolve the ALB in time, rerun it after the Ingress hostname appears or run the `aws elbv2 register-targets` command printed by the script.
 
 ### AWS Load Balancer Controller cannot discover the VPC
 
